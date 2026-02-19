@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Blog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;600;700&family=Josefin+Sans:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #111;
+      --muted: #666;
+      --border: #e7e7e7;
+      --pill: #f6f6f6;
+      --pillActive: #111;
+      --pillActiveFg: #fff;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: "Fira Sans", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--fg); }
+    .wrap { padding: 16px; max-width: 1120px; margin: 0 auto; }
+
+    .topbar { display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom: 12px; }
+    .btn {
+      border:1px solid var(--border);
+      background:#fff;
+      padding:8px 10px;
+      border-radius:10px;
+      cursor:pointer;
+      font: inherit;
+      color: inherit;
+    }
+    .btn:active { transform: translateY(1px); }
+    .status { color: var(--muted); font-size: 13px; margin: 8px 0 12px 0; }
+
+    .layout { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    @media (min-width: 900px) {
+      .layout { grid-template-columns: 260px 1fr; align-items: start; }
+    }
+
+    .catsWrap { border: 1px solid var(--border); border-radius: 12px; padding: 10px; background: #fff; }
+    .catsTitle { font-size: 12px; color: var(--muted); margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: .06em; }
+    .cats {
+      display:flex;
+      flex-direction: column;
+      gap:0;
+      max-height: calc(100vh - 180px);
+      overflow: auto;
+      padding: 0;
+      margin: 0;
+    }
+    .catItem {
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 0;
+      border-bottom: 1px solid var(--border);
+      background: transparent;
+      padding: 10px 8px;
+      cursor:pointer;
+      white-space: nowrap;
+      font-size: 12px;
+      color: #222;
+      user-select: none;
+    }
+    .catItem:hover { background: #fafafa; }
+    .catItem[data-active="true"] { background: #f3f3f3; font-weight: 750; }
+    .catName { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .catCount { color: var(--muted); font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+    .catItem:last-child { border-bottom: 0; }
+
+    .cardsWrap { border: 1px solid var(--border); border-radius: 12px; padding: 12px; background:#fff; }
+    .cardsTitle { font-size: 12px; color: var(--muted); margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: .06em; }
+
+    .grid { display:grid; grid-template-columns: 1fr; gap:12px; }
+    @media (min-width: 900px) {
+      .grid { grid-template-columns: 1fr 1fr 1fr; }
+    }
+    .card {
+      border:1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      background: #fff;
+      display:flex;
+      flex-direction: column;
+      min-height: 100%;
+    }
+    .card:hover { box-shadow: 0 10px 20px rgba(0,0,0,.06); }
+    .cardTop { padding: 10px 12px 8px 12px; }
+    .dateLine { font-size: 11px; color: var(--muted); margin: 0; }
+    .thumb {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      background:#f2f2f2;
+      display:block;
+    }
+    .cardBody { padding: 10px 12px 12px 12px; }
+    .catLabel { font-size: 11px; color: #2e7d32; font-weight: 750; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: .04em; opacity: .75; }
+    .title { margin:0 0 8px 0; font-size: 16px; font-weight: 800; line-height: 1.25; font-family: "Josefin Sans", "Fira Sans", system-ui, sans-serif; color: #2A4437; }
+    .desc { margin:0; font-size: 12px; color: var(--muted); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* Post iframe mirror */
+    body.mode-post .wrap { padding: 0; max-width: none; margin: 0; }
+    body.mode-post .topbar, body.mode-post .layout, body.mode-post .status { display:none; }
+    .frameWrap { border: 0; border-radius: 0; height: 100vh; }
+    iframe { width:100%; height: 100vh; border:0; display:block; }
+    .floatingBack {
+      position: fixed;
+      top: 12px;
+      left: 0;
+      z-index: 2147483647;
+      box-shadow: 0 8px 18px rgba(0,0,0,.12);
+      display: none;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+    body.mode-post .floatingBack { display: inline-block; }
+    .hint { padding: 10px 12px; font-size: 12px; color: var(--muted); }
+    .error { color:#b00020; }
+
+    /* Mobile: move back button to the right edge */
+    @media (max-width: 600px) {
+      .floatingBack {
+        left: auto;
+        right: 18px;
+        border-top-left-radius: 10px;
+        border-bottom-left-radius: 10px;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <button id="floatingBackBtn" class="btn floatingBack" type="button">← Voltar</button>
+
+  <div class="wrap">
+    <div class="topbar">
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button id="backBtn" class="btn" style="display:none;">← Voltar</button>
+        <strong id="pageTitle">Blog</strong>
+      </div>
+      <a class="btn" href="https://blog.bullseye.ind.br/" target="_blank" rel="noopener" style="text-decoration:none;">Abrir Blogger</a>
+    </div>
+
+    <div id="status" class="status">Carregando…</div>
+
+    <div id="layout" class="layout" style="display:none;">
+      <aside class="catsWrap">
+        <p class="catsTitle">Categorias</p>
+        <div id="cats" class="cats"></div>
+        <div id="catsHint" class="status" style="display:none; margin:10px 0 0 0;">
+          Para aparecerem categorias por nome (ex: Negócios, Vendas, IA), adicione <b>Labels</b> nos posts do Blogger.
+        </div>
+      </aside>
+
+      <main id="listView" style="display:none;">
+        <div class="cardsWrap">
+          <p id="cardsTitle" class="cardsTitle">Posts</p>
+          <div id="grid" class="grid"></div>
+        </div>
+      </main>
+    </div>
+
+    <div id="postView" style="display:none;">
+      <div class="frameWrap">
+        <iframe id="postFrame" title="Post do Blogger"></iframe>
+      </div>
+      <div id="frameHint" class="hint" style="display:none;">
+        Se o post não carregar aqui, abra no Blogger:
+        <a id="fallbackLink" href="https://blog.bullseye.ind.br/" target="_blank" rel="noopener">Abrir post</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const FEED = "https://blog.bullseye.ind.br/feeds/posts/default";
+    const MAX_RESULTS = 150;
+
+    let __entries = [];
+    let __categories = [];
+    let __selectedCat = "Todos";
+    let __frameTimer = null;
+
+    function qs(name) {
+      return new URLSearchParams(location.search).get(name);
+    }
+
+    function pickAlternateLink(entry) {
+      const links = entry.link || [];
+      const alt = links.find(l => l.rel === "alternate" && (l.type || "").includes("text/html"));
+      return alt ? alt.href : null;
+    }
+
+    function htmlToText(html) {
+      try {
+        const doc = new DOMParser().parseFromString(String(html || ""), "text/html");
+        return (doc.body.textContent || "").replace(/\s+/g, " ").trim();
+      } catch { return ""; }
+    }
+
+    function firstImageFromHtml(html) {
+      const m = String(html || "").match(/<img[^>]+src="([^"]+)"/i);
+      return m ? m[1] : "";
+    }
+
+    function upscaleBloggerImg(url) {
+      const u = String(url || "");
+      // Common pattern: .../s72-w640-h426-c/... -> .../w1200/...
+      return u.replace(/\/s\d+-[^/]+\//, "/w1200/");
+    }
+
+    function formatDate(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return "";
+      // Match "09 de janeiro 2026" (similar to robustec reference)
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = d.toLocaleDateString("pt-BR", { month: "long" });
+      const year = String(d.getFullYear());
+      return `${day} de ${month} ${year}`;
+    }
+
+    function getPublishedIso(entry) {
+      return (entry && entry.published && entry.published.$t) ? entry.published.$t : "";
+    }
+
+    function extractLabels(entry) {
+      const raw = entry && entry.category ? entry.category : [];
+      const out = [];
+      for (const c of raw) {
+        if (!c) continue;
+        const term = (typeof c === "string") ? c : (c.term || c.$t || "");
+        if (!term) continue;
+        // filter blogger "kind" categories or urls
+        if (String(term).startsWith("http://") || String(term).startsWith("https://")) continue;
+        out.push(String(term));
+      }
+      return Array.from(new Set(out));
+    }
+
+    function computeCategories(entries) {
+      const counts = new Map(); // label -> count
+      let uncategorized = 0;
+
+      for (const e of entries) {
+        const labels = extractLabels(e);
+        if (!labels.length) {
+          uncategorized += 1;
+          continue;
+        }
+        labels.forEach(l => counts.set(l, (counts.get(l) || 0) + 1));
+      }
+
+      const labelsSorted = Array.from(counts.keys()).sort((a,b) => a.localeCompare(b, "pt-BR"));
+      const out = [{ name: "Todos", count: entries.length }];
+      labelsSorted.forEach(name => out.push({ name, count: counts.get(name) || 0 }));
+      if (uncategorized > 0) out.push({ name: "Sem categoria", count: uncategorized });
+      return out;
+    }
+
+    function entryMatchesCategory(entry, cat) {
+      if (!cat || cat === "Todos") return true;
+      const labels = extractLabels(entry);
+      if (!labels.length) return cat === "Sem categoria";
+      return labels.includes(cat);
+    }
+
+    function setSelectedCategory(cat, pushState) {
+      __selectedCat = cat || "Todos";
+      const catsEl = document.getElementById("cats");
+      catsEl.querySelectorAll(".catItem").forEach(p => {
+        p.dataset.active = (p.dataset.cat === __selectedCat) ? "true" : "false";
+      });
+
+      if (pushState) {
+        const params = new URLSearchParams();
+        if (__selectedCat && __selectedCat !== "Todos") params.set("cat", __selectedCat);
+        history.pushState({}, "", (params.toString() ? "?" + params.toString() : location.pathname));
+      }
+      renderList();
+    }
+
+    function renderCategories() {
+      const catsEl = document.getElementById("cats");
+      const catsHint = document.getElementById("catsHint");
+      catsEl.innerHTML = "";
+
+      for (const item of __categories) {
+        const row = document.createElement("div");
+        row.className = "catItem";
+        row.dataset.cat = item.name;
+        row.dataset.active = (item.name === __selectedCat) ? "true" : "false";
+        row.onclick = () => setSelectedCategory(item.name, true);
+
+        const name = document.createElement("span");
+        name.className = "catName";
+        name.textContent = item.name;
+
+        const count = document.createElement("span");
+        count.className = "catCount";
+        count.textContent = "(" + String(item.count) + ")";
+
+        row.appendChild(name);
+        row.appendChild(count);
+        catsEl.appendChild(row);
+      }
+
+      const hasRealLabels = __categories.some(x => x.name !== "Todos" && x.name !== "Sem categoria");
+      if (!hasRealLabels) catsHint.style.display = "block";
+      else catsHint.style.display = "none";
+    }
+
+    function openPostUrl(postUrl) {
+      document.body.classList.add("mode-post");
+      document.getElementById("backBtn").style.display = "inline-block";
+      document.getElementById("listView").style.display = "none";
+      document.getElementById("postView").style.display = "block";
+      // Hide sidebar/categories explicitly (Google Sites embed can be finicky with CSS-only hiding)
+      document.getElementById("layout").style.display = "none";
+
+      const frame = document.getElementById("postFrame");
+      frame.src = postUrl;
+
+      const fallbackLink = document.getElementById("fallbackLink");
+      if (fallbackLink) fallbackLink.href = postUrl;
+
+      document.getElementById("frameHint").style.display = "none";
+      if (__frameTimer) clearTimeout(__frameTimer);
+      __frameTimer = setTimeout(() => {
+        document.getElementById("frameHint").style.display = "block";
+      }, 2500);
+
+      frame.onload = () => {
+        if (__frameTimer) clearTimeout(__frameTimer);
+        document.getElementById("frameHint").style.display = "none";
+      };
+    }
+
+    function renderList() {
+      document.body.classList.remove("mode-post");
+      document.getElementById("backBtn").style.display = "none";
+      document.getElementById("postView").style.display = "none";
+      document.getElementById("listView").style.display = "block";
+      document.getElementById("layout").style.display = "grid";
+
+      const grid = document.getElementById("grid");
+      grid.innerHTML = "";
+
+      const filtered = __entries.filter(e => entryMatchesCategory(e, __selectedCat));
+      const cardsTitle = document.getElementById("cardsTitle");
+      if (cardsTitle) cardsTitle.textContent = __selectedCat === "Todos" ? "Posts" : ("Posts — " + __selectedCat);
+
+      filtered.forEach(entry => {
+        const title = (entry.title && entry.title.$t) ? entry.title.$t : "Sem título";
+        const publishedIso = getPublishedIso(entry);
+        const contentHtml = (entry.content && entry.content.$t) ? entry.content.$t : "";
+        const excerptText = htmlToText(contentHtml);
+        const excerpt = excerptText.slice(0, 160) + (excerptText.length > 160 ? "…" : "");
+
+        const postUrl = pickAlternateLink(entry) || "";
+        const thumb =
+          upscaleBloggerImg((entry.media$thumbnail && entry.media$thumbnail.url) || "") ||
+          firstImageFromHtml(contentHtml) ||
+          "";
+
+        const card = document.createElement("div");
+        card.className = "card";
+        card.tabIndex = 0;
+        card.role = "link";
+        card.onclick = () => {
+          const params = new URLSearchParams();
+          params.set("url", postUrl);
+          if (__selectedCat && __selectedCat !== "Todos") params.set("cat", __selectedCat);
+          history.pushState({}, "", "?" + params.toString());
+          openPostUrl(postUrl);
+        };
+        card.onkeydown = (e) => {
+          if (e.key === "Enter" || e.key === " ") card.click();
+        };
+
+        const labels = extractLabels(entry);
+        const primaryCat =
+          (__selectedCat && __selectedCat !== "Todos") ? __selectedCat :
+          (labels[0] || (labels.length === 0 ? "Sem categoria" : ""));
+
+        const top = document.createElement("div");
+        top.className = "cardTop";
+
+        const dt = document.createElement("p");
+        dt.className = "dateLine";
+        dt.textContent = formatDate(publishedIso);
+        top.appendChild(dt);
+
+        const img = document.createElement("img");
+        img.className = "thumb";
+        img.alt = "";
+        if (thumb) img.src = thumb;
+
+        const body = document.createElement("div");
+        body.className = "cardBody";
+
+        const catLabel = document.createElement("p");
+        catLabel.className = "catLabel";
+        catLabel.textContent = primaryCat;
+
+        const h = document.createElement("p");
+        h.className = "title";
+        h.textContent = title;
+
+        const d = document.createElement("p");
+        d.className = "desc";
+        d.textContent = excerpt || " ";
+
+        body.appendChild(catLabel);
+        body.appendChild(h);
+        body.appendChild(d);
+
+        card.appendChild(top);
+        card.appendChild(img);
+        card.appendChild(body);
+        grid.appendChild(card);
+      });
+
+      if (filtered.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "status";
+        empty.textContent = "Nenhum post nesta categoria.";
+        grid.appendChild(empty);
+      }
+    }
+
+    function renderFromUrl() {
+      const status = document.getElementById("status");
+      status.textContent = "";
+
+      const url = (qs("url") || "").trim();
+      const cat = (qs("cat") || "").trim();
+
+      // restore category selection first
+      if (cat && __categories.some(x => x.name === cat)) __selectedCat = cat;
+      else __selectedCat = "Todos";
+
+      renderCategories();
+
+      if (url) openPostUrl(url);
+      else renderList();
+    }
+
+    function onFeed(data) {
+      const status = document.getElementById("status");
+      const entries = (data && data.feed && data.feed.entry) ? data.feed.entry : [];
+      __entries = entries;
+
+      if (!entries.length) {
+        status.textContent = "Nenhum post encontrado.";
+        return;
+      }
+
+      __categories = computeCategories(entries);
+
+      // Default selection from URL if present
+      const catFromUrl = (qs("cat") || "").trim();
+      if (catFromUrl && __categories.some(x => x.name === catFromUrl)) __selectedCat = catFromUrl;
+      else __selectedCat = "Todos";
+
+      document.getElementById("layout").style.display = "grid";
+      document.getElementById("listView").style.display = "block";
+
+      document.getElementById("backBtn").onclick = () => {
+        const params = new URLSearchParams();
+        if (__selectedCat && __selectedCat !== "Todos") params.set("cat", __selectedCat);
+        history.pushState({}, "", (params.toString() ? "?" + params.toString() : location.pathname));
+        renderFromUrl();
+      };
+      document.getElementById("floatingBackBtn").onclick = () => {
+        const params = new URLSearchParams();
+        if (__selectedCat && __selectedCat !== "Todos") params.set("cat", __selectedCat);
+        history.pushState({}, "", (params.toString() ? "?" + params.toString() : location.pathname));
+        renderFromUrl();
+      };
+
+      window.addEventListener("popstate", renderFromUrl);
+      renderFromUrl();
+    }
+
+    (function load() {
+      window.onFeed = onFeed;
+      const s = document.createElement("script");
+      s.src = FEED + "?alt=json-in-script&callback=onFeed&max-results=" + encodeURIComponent(MAX_RESULTS);
+      s.onerror = () => document.getElementById("status").innerHTML = '<div class="error">Falha ao carregar o feed.</div>';
+      document.head.appendChild(s);
+    })();
+  </script>
+</body>
+</html>
+
